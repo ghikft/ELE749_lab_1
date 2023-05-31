@@ -11,7 +11,7 @@
  ******************************************************************************
  * Author : Simon Pichette
  * Creation date : 2014-05-01
- * Last Modified : 2014-05-01
+ * Last Modified : 2014-05-01f
  ******************************************************************************
  * Notes
  * Base sur le listing 9.5 de [Pong Chu SOPC]
@@ -105,8 +105,8 @@ void get_switches(alt_u32 sw_base, int *period)
 	 * period : variable pointee par period est modifiee
 	 *
 	 * Notes
-	 * Puisque le registre switches n’a que 10 bits, on applique un masque
-	 * sur la valeur lue pour s’assurer que les bits 10 a 31 sont nuls.
+	 * Puisque le registre switches nï¿½a que 10 bits, on applique un masque
+	 * sur la valeur lue pour sï¿½assurer que les bits 10 a 31 sont nuls.
 	 *************************************************************************/
 
 	*period = IORD(sw_base, 0) & 0x000003FF;
@@ -119,7 +119,7 @@ void get_keys(alt_u32 key_base, int *keyValue)
 	 **************************************************************************
 	 * Parametres
 	 * key_base : adresse de base des bouton
-	 * keyValue : pointeur vers variables qui contiendra l'état des bouton
+	 * keyValue : pointeur vers variables qui contiendra l'ï¿½tat des bouton
 	 *
 	 * Valeur de retour
 	 * aucune
@@ -128,8 +128,8 @@ void get_keys(alt_u32 key_base, int *keyValue)
 	 * keyValue : variable pointee par keyValue est modifiee
 	 *
 	 * Notes
-	 * Puisque le registre keys n’a que 4 bits, on applique un masque
-	 * sur la valeur lue pour s’assurer que les bits 4 a 31 sont nuls.
+	 * Puisque le registre keys nï¿½a que 4 bits, on applique un masque
+	 * sur la valeur lue pour sï¿½assurer que les bits 4 a 31 sont nuls.
 	 *************************************************************************/
 
 	*keyValue = IORD(key_base, 0) & 0x0000000F;
@@ -151,13 +151,13 @@ void led_flash(alt_u32 led_base, int period)
 	 * aucun
 	 *
 	 * Notes
-	 * Le delais est genere par l’execution d’une boucle for inutile.
-	 * On estime a 500ns le temps d’execution de la boucle, il faut
+	 * Le delais est genere par lï¿½execution dï¿½une boucle for inutile.
+	 * On estime a 500ns le temps dï¿½execution de la boucle, il faut
 	 * donc 2000 tours de boucle par miliseconde.
 	 * Estimation basee sur :
 	 * - 5 instructions par iteration de boucle
 	 * - 5 cycles par instruction sur le Nios II/s
-	 * - 20 ns par cycle d’horloge (horloge de 50MHz)
+	 * - 20 ns par cycle dï¿½horloge (horloge de 50MHz)
 	 *************************************************************************/
 
 	static alt_u8 led_pattern = 0x01; // patron initial
