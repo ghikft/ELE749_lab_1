@@ -38,6 +38,8 @@
 #define HEX_E 0x06
 #define HEX_BLANK 0xFF
 
+#define TIMER_CONVERSION 50000
+
 
 /* Exemple d'envoi de chaine de characteres a travers le JTAG UART */
 #define JUART_DATA_REG_OFT		 0		 	 // offset du data register
@@ -66,6 +68,9 @@
 	(IORD(base, TIMER_STAT_REG_OFT) & 0x01)
 #define timer_clear_tick(base) \
 	IOWR(base, TIMER_STAT_REG_OFT, 0)
+
+
+int flagFlash = 0;
 
 alt_u8 sseg_conv_hex(int hex)
 {
@@ -282,6 +287,7 @@ void juart_write_string(alt_u32 jtag_base, alt_u8 *message){
 
 void timer_write_period(alt_u32 timer_base, alt_u32 period)
 {
+	period = period*TIMER_CONVERSION;
 	alt_u16 high, low;
 	/* separer la periode 32bits en 2 valeurs 16 bits */
 	high = (alt_u16) (period >> 16);
@@ -297,17 +303,10 @@ void timer_0_ISR(void *context)
 {
 	// clear irq status in order to prevent retriggering
 	//IOWR(INTERVALTIMER_BASE, TIMER_CTRL_REG_OFT, 4);
-	timer_clear_tick(INTERVALTIMER_BASE);
-	//IOWR(INTERVALTIMER_BASE, TIMER_STAT_REG_OFT, 0);
-	alt_putstr("ISR TEST!\n");
-
-	static alt_u8 led_pattern = 0x01; // patron initial
-
-	alt_u32 i, itr;
-
-	led_pattern ^= 0x03; // inverse 2 LSB
-	//timer_write_period(INTERVALTIMER_BASE,100);
-	IOWR(LEDS_BASE, 0, led_pattern); // Ecriture du patron dans registres de leds
+	//timer_clear_tick(INTERVALTIMER_BASE);
+	IOWR(INTERVALTIMER_BASE, TIMER_STAT_REG_OFT, 0b10);
+	//alt_putstr("ISR TEST!\n");
+	flagFlash = 1;
 }
 
 int main(void)
@@ -315,14 +314,22 @@ int main(void)
 	/**************************************************************************
 	 * Programme principal
 	 *************************************************************************/
-	int period = 100;
+	alt_u32 period = 100;
 	int displayVal;
 	int keyVal;
 	char pauseFlag=0;
 	//start timer with default period value
+	
+	IOWR(INTERVALTIMER_BASE, TIMER_CTRL_REG_OFT, 0b1000);
+	timer_write_period(INTERVALTIMER_BASE,period);
+	alt_ic_isr_register(INTERVALTIMER_IRQ_INTERRUPT_CONTROLLER_ID, INTERVALTIMER_IRQ, timer_0_ISR,0x0,0x0);
+	//IOWR(INTERVALTIMER_BASE, TIMER_CTRL_REG_OFT, 0b0111);
+	//alt_ic_irq_enable(INTERVALTIMER_IRQ_INTERRUPT_CONTROLLER_ID,INTERVALTIMER_IRQ);
+	
+
 	while (1) {
 		alt_u8 message[6];
-		alt_u8 pause_msg[6]={HEX_BLANK, HEX_P, HEX_A, HEX_U, HEX_S, HEX_E};//setup pause value in the array/// HARD code Letter with define
+		alt_u8 pause_msg[6]={HEX_BLANK, HEX_P, HEX_A, HEX_U, HEX_S, HEX_E};//setup pause value in the array
 		alt_u8 jtag_message[50]={'N','e','w',' ','P','e','r','i','o','d',':'};
 		/*message[0]=sseg_conv_hex(10);
 		message[1]=sseg_conv_hex(11);
@@ -346,11 +353,9 @@ int main(void)
 
 		led_flash(LEDS_BASE, period);*/
 		//IOWR(INTERVALTIMER_BASE, TIMER_STAT_REG_OFT, 0);
-		
 
-		alt_ic_isr_register(INTERVALTIMER_IRQ_INTERRUPT_CONTROLLER_ID, INTERVALTIMER_IRQ, timer_0_ISR,NULL,NULL);
-		alt_ic_irq_enable(INTERVALTIMER_IRQ_INTERRUPT_CONTROLLER_ID,INTERVALTIMER_IRQ);
-		timer_write_period(INTERVALTIMER_BASE,period);
+		
+	
 
 		//Application Final
 		get_switches(SWITCHES_BASE, &displayVal);
@@ -372,11 +377,11 @@ int main(void)
 
 			if(pauseFlag != 0){
 				//stop timer
-				timer_clear_tick(INTERVALTIMER_BASE);
+				IOWR(INTERVALTIMER_BASE, TIMER_CTRL_REG_OFT, 0b1000);
 			}
 			else{
 				//startTimer
-				timer_write_period(INTERVALTIMER_BASE,period);
+				IOWR(INTERVALTIMER_BASE, TIMER_CTRL_REG_OFT, 0b0111);
 		 	}
 			delay_ms(250);
 		}
@@ -387,6 +392,15 @@ int main(void)
 		}
 		else{
 			sseg_disp_6_digit(DISP_0_TO_2_BASE,DISP_3_TO_5_BASE,pause_msg);
+		}
+
+		if(flagFlash){
+			//alt_putstr("ISR TEST!\n");
+			static alt_u8 led_pattern = 0x01; // patron initial
+
+			led_pattern ^= 0x03; // inverse 2 LSB
+			IOWR(LEDS_BASE, 0, led_pattern); // Ecriture du patron dans registres de leds
+			flagFlash = 0;
 		}
 		//led_flash(LEDS_BASE, period);
 	}
