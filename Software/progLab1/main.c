@@ -24,17 +24,16 @@
 /* pilote pour 4 afficheurs 7 segments controles par un PIO 32bit
  sortie seulement. */
 #define PIO_DATA_REG_OFT 0 // offset du registre Data
-#define pio_write(base, data) IOWR(base, PIO_DATA_REG_OFT, data)
+#define pio_write(base, data) IOWR(base, PIO_DATA_REG_OFT, data);
 
-#define LOAD_KEY_MSK 0x02;
-#define PAUSE_KEY_MSK 0x01;
+#define LOAD_KEY_MSK 0x02
+#define PAUSE_KEY_MSK 0x01
 alt_u8 sseg_conv_hex(int hex)
-
 {
 	/* patrons hexadecimaux pour afficheur 7seg active-low (0-9, a-f)
  le msb est ignore */
 	static const alt_u8 SSEG_HEX_TABLE[16] = {
-			0x04, 0x79, 0x24, 0x30, 0x19, 0x92, 0x02, 0x78, 0x00, 0x10, // 0-9
+			0x40, 0x79, 0x24, 0x30, 0x19, 0x92, 0x02, 0x78, 0x00, 0x10, // 0-9
 			0x88, 0x03, 0x46, 0x21, 0x06, 0x0E};		 	 	 	 	 // a-f
 	alt_u8 pattern;
 	if (hex < 16) {
@@ -175,15 +174,15 @@ void led_flash(alt_u32 led_base, int period)
 void number_to_character(alt_u16 number, alt_u8 *charOut){
 	int tempAff=number;
 
-	charOut[0] = sseg_conv_hex(tempAff%10);
+	charOut[5] = sseg_conv_hex(tempAff%10);
 	tempAff = tempAff-tempAff%10;
-	charOut[1] = sseg_conv_hex(tempAff%100/10);
+	charOut[4] = sseg_conv_hex(tempAff%100/10);
 	tempAff = tempAff-tempAff%100;
-	charOut[2] = sseg_conv_hex(tempAff%1000/100);
+	charOut[3] = sseg_conv_hex(tempAff%1000/100);
 	tempAff = tempAff-tempAff%1000;
-	charOut[3] = sseg_conv_hex(tempAff/1000);
-	charOut[4] = sseg_conv_hex(0);
-	charOut[5] = sseg_conv_hex(0);
+	charOut[2] = sseg_conv_hex(tempAff/1000);
+	charOut[1] = sseg_conv_hex(0);
+	charOut[0] = sseg_conv_hex(0);
 }
 int main(void)
 {
@@ -193,12 +192,12 @@ int main(void)
 	int period;
 	int displayVal;
 	int keyVal;
-	char PauseFlag=0;
+	char pauseFlag=0;
 	//start timer with default period value
 	while (1) {
 		alt_u8 message[6];
-		//alt_u8 pause_msg[6]={'';//setup pause value in the array/// HARD code Letter with define
-		message[0]=sseg_conv_hex(10);
+		alt_u8 pause_msg[6];//setup pause value in the array/// HARD code Letter with define
+		/*message[0]=sseg_conv_hex(10);
 		message[1]=sseg_conv_hex(11);
 		message[2]=sseg_conv_hex(12);
 		message[3]=sseg_conv_hex(1);
@@ -207,22 +206,22 @@ int main(void)
 
 		get_switches(SWITCHES_BASE, &period);
 
-		/*tempAff=period;
+		tempAff=period;
 		message[0] = sseg_conv_hex(tempAff%10);
 		tempAff = tempAff-tempAff%10;
 		message[1] = sseg_conv_hex(tempAff%100/10);
 		tempAff = tempAff-tempAff%100;
 		message[2] = sseg_conv_hex(tempAff%1000/100);
 		tempAff = tempAff-tempAff%1000;
-		message[3] = sseg_conv_hex(tempAff/1000);*/
+		message[3] = sseg_conv_hex(tempAff/1000);
 		sseg_disp_4_digit(DISP_0_TO_2_BASE,DISP_3_TO_5_BASE,message);
 
 
-		led_flash(LEDS_BASE, period);
+		led_flash(LEDS_BASE, period);*/
 
-		/*//Application Final
+		//Application Final
 		get_switches(SWITCHES_BASE, &displayVal);
-		get_keys(PUSHBT_BASE, *keyVal)
+		get_keys(PUSHBT_BASE, &keyVal);
 		//load pressed?
 		if(!(keyVal & LOAD_KEY_MSK)){
 			period = displayVal;
@@ -232,7 +231,7 @@ int main(void)
 
 		//Pause pressed? flip the pause flagState
 		if(!(keyVal & PAUSE_KEY_MSK)){
-			pauseFlag ~= pauseFlag
+			pauseFlag = ~pauseFlag;
 
 			if(pauseFlag != 0){
 			//stop timer
@@ -242,22 +241,13 @@ int main(void)
 		 	}
 		}
 
-		//number_to_character(period, message);//split the period into individual number
+		number_to_character(displayVal, message);//split the period into individual number
 		if(pauseFlag==0){
 			sseg_disp_6_digit(DISP_0_TO_2_BASE,DISP_3_TO_5_BASE,message);
 		}
 		else{
 			sseg_disp_6_digit(DISP_0_TO_2_BASE,DISP_3_TO_5_BASE,pause_msg);
 		}
-		 * led_flash(LEDS_BASE, period);*/
-
+		//led_flash(LEDS_BASE, period);
 	}
 }
-
-
-
-
-
-
-
-
