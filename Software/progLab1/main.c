@@ -19,8 +19,9 @@
  *****************************************************************************/
 #include "io.h"
 #include "alt_types.h"
+#include "sys/alt_irq.h"
 #include "system.h"
-#include "stdio.h"
+# include "sys/alt_stdio.h"
 
 /* pilote pour 4 afficheurs 7 segments controles par un PIO 32bit
  sortie seulement. */
@@ -50,6 +51,22 @@
 /* ecrire un charactere 8 bits */
 #define juart_write_char(base, data) \
 		IOWR(base, JUART_DATA_REG_OFT, data & JUART_CHAR_MASK)
+
+
+#define TIMER_STAT_REG_OFT		 0 // registre de statut
+#define TIMER_CTRL_REG_OFT		 1 // registre de controle
+#define TIMER_PERIODL_REG_OFT 2 // registre de periode, bits 15:0
+#define TIMER_PERIODH_REG_OFT 3 // registre de periode, bits 31:16
+
+ /* Acces de base *//* Le champ to du registre de status est mis a 1 lorsque le compteur atteint 0
+* et demeure a 1 jusqu'a ce que le processeur ecrive un 0 sur ce champ.
+* il est possible de l'utiliser comme un "tick" que l'on verifiera periodiquement.
+* les macros suivantes servent a verifier et reinitialiser le champ to */
+#define timer_read_tick(base) \
+	(IORD(base, TIMER_STAT_REG_OFT) & 0x01)
+#define timer_clear_tick(base) \
+	IOWR(base, TIMER_STAT_REG_OFT, 0)
+
 alt_u8 sseg_conv_hex(int hex)
 {
 	/* patrons hexadecimaux pour afficheur 7seg active-low (0-9, a-f)
@@ -262,12 +279,43 @@ void juart_write_string(alt_u32 jtag_base, alt_u8 *message){
 		}
 	}
 }
+
+void timer_write_period(alt_u32 timer_base, alt_u32 period)
+{
+	alt_u16 high, low;
+	/* separer la periode 32bits en 2 valeurs 16 bits */
+	high = (alt_u16) (period >> 16);
+	low = (alt_u16) (period & 0x0000FFFF);
+	/* ecrire la periode */
+	IOWR(timer_base, TIMER_PERIODH_REG_OFT, high);
+	IOWR(timer_base, TIMER_PERIODL_REG_OFT, low);
+	/* configuration du timer pour demarrage, mode continu, avec interrupt */
+	IOWR(timer_base, TIMER_CTRL_REG_OFT, 0x0007); // bits 0, 1, 2 actives
+}
+
+void timer_0_ISR(void *context)
+{
+	// clear irq status in order to prevent retriggering
+	//IOWR(INTERVALTIMER_BASE, TIMER_CTRL_REG_OFT, 4);
+	timer_clear_tick(INTERVALTIMER_BASE);
+	//IOWR(INTERVALTIMER_BASE, TIMER_STAT_REG_OFT, 0);
+	alt_putstr("ISR TEST!\n");
+
+	static alt_u8 led_pattern = 0x01; // patron initial
+
+	alt_u32 i, itr;
+
+	led_pattern ^= 0x03; // inverse 2 LSB
+	//timer_write_period(INTERVALTIMER_BASE,100);
+	IOWR(LEDS_BASE, 0, led_pattern); // Ecriture du patron dans registres de leds
+}
+
 int main(void)
 {
 	/**************************************************************************
 	 * Programme principal
 	 *************************************************************************/
-	int period;
+	int period = 100;
 	int displayVal;
 	int keyVal;
 	char pauseFlag=0;
@@ -297,18 +345,25 @@ int main(void)
 
 
 		led_flash(LEDS_BASE, period);*/
+		//IOWR(INTERVALTIMER_BASE, TIMER_STAT_REG_OFT, 0);
+		
+
+		alt_ic_isr_register(INTERVALTIMER_IRQ_INTERRUPT_CONTROLLER_ID, INTERVALTIMER_IRQ, timer_0_ISR,NULL,NULL);
+		alt_ic_irq_enable(INTERVALTIMER_IRQ_INTERRUPT_CONTROLLER_ID,INTERVALTIMER_IRQ);
+		timer_write_period(INTERVALTIMER_BASE,period);
 
 		//Application Final
 		get_switches(SWITCHES_BASE, &displayVal);
 		get_keys(PUSHBT_BASE, &keyVal);
 		//load pressed?
 		if(!(keyVal & LOAD_KEY_MSK)){
-			delay_ms(250);
 			period = displayVal;
 			periode_to_message(period,jtag_message);
+			//send JTAG msg
 			juart_write_string(JTAG_UART_0_BASE,jtag_message);
 			//load timer
-			//send JTAG msg
+			timer_write_period(INTERVALTIMER_BASE,period);
+			delay_ms(250);
 		}
 
 		//Pause pressed? flip the pause flagState
@@ -316,10 +371,12 @@ int main(void)
 			pauseFlag = ~pauseFlag;
 
 			if(pauseFlag != 0){
-			//stop timer
+				//stop timer
+				timer_clear_tick(INTERVALTIMER_BASE);
 			}
 			else{
 				//startTimer
+				timer_write_period(INTERVALTIMER_BASE,period);
 		 	}
 			delay_ms(250);
 		}
@@ -332,9 +389,5 @@ int main(void)
 			sseg_disp_6_digit(DISP_0_TO_2_BASE,DISP_3_TO_5_BASE,pause_msg);
 		}
 		//led_flash(LEDS_BASE, period);
-
-
-
-
 	}
 }

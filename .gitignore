@@ -104,3 +104,5 @@ Software/progLab1_bsp/
 *.bak
 
 Labo1.qws
+
+*.json

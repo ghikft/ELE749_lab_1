@@ -91,9 +91,22 @@
    }
    element jtag_uart_0.avalon_jtag_slave
    {
+      datum _tags
+      {
+         value = "";
+         type = "String";
+      }
       datum baseAddress
       {
          value = "135288";
+         type = "String";
+      }
+   }
+   element jtag_uart_0.reset
+   {
+      datum _tags
+      {
+         value = "";
          type = "String";
       }
    }
