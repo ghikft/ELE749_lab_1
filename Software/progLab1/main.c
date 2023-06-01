@@ -28,6 +28,19 @@
 
 #define LOAD_KEY_MSK 0x02
 #define PAUSE_KEY_MSK 0x01
+
+/* Exemple d'envoi de chaine de characteres a travers le JTAG UART */
+#define JUART_DATA_REG_OFT		 0		 	 // offset du data register
+#define JUART_CTRL_REG_OFT		 1		 	 // offset du control register
+#define JUART_WSPACE_MASK	 	 0xffff0000
+#define JUART_WSPACE_BIT_OFT 16		 	 // bit offset du champ wspace
+#define JUART_CHAR_MASK	 	 0x000000ff
+/* verifier l'espace disponible dans le tampon FIFO ecriture */
+#define juart_read_wspace(base) \
+		((IORD(base, JUART_CTRL_REG_OFT) & JUART_WSPACE_MASK) >> JUART_WSPACE_BIT_OFT)
+/* ecrire un charactere 8 bits */
+#define juart_write_char(base, data) \
+		IOWR(base, JUART_DATA_REG_OFT, data & JUART_CHAR_MASK)
 alt_u8 sseg_conv_hex(int hex)
 {
 	/* patrons hexadecimaux pour afficheur 7seg active-low (0-9, a-f)
@@ -184,6 +197,49 @@ void number_to_character(alt_u16 number, alt_u8 *charOut){
 	charOut[1] = sseg_conv_hex(0);
 	charOut[0] = sseg_conv_hex(0);
 }
+alt_u8 number_to_ascii(alt_u8 numberIn){
+	return numberIn+0x30;
+}
+void periode_to_message(alt_u16 number, alt_u8 *messageOut){
+	int tempAff=number;
+	messageOut[0]='N';
+	messageOut[1]='e';
+	messageOut[2]='w';
+	messageOut[3]=' ';
+	messageOut[4]='p';
+	messageOut[5]='e';
+	messageOut[6]='r';
+	messageOut[7]='i';
+	messageOut[8]='o';
+	messageOut[9]='d';
+	messageOut[10]=':';
+
+	messageOut[16] = number_to_ascii(tempAff%10);
+	tempAff = tempAff-tempAff%10;
+	messageOut[15] = number_to_ascii(tempAff%100/10);
+	tempAff = tempAff-tempAff%100;
+	messageOut[14] = number_to_ascii(tempAff%1000/100);
+	tempAff = tempAff-tempAff%1000;
+	messageOut[13] = number_to_ascii(tempAff/1000);
+	messageOut[12] = number_to_ascii(0);
+	messageOut[11] = number_to_ascii(0);
+
+	messageOut[16]='\0';
+
+}
+/* routine pour l'envoi d'une chaine de characteres.
+	methode "busy-waiting" */
+void juart_write_string(alt_u32 jtag_base, alt_u8 *message){
+	// message est une cstr (chaine de charactere terminee par NUL)
+	alt_u32 data32;
+	while(*message != '\0') {
+		data32 = (alt_u32) *message;
+		if (juart_read_wspace(jtag_base) != 0) {
+			juart_write_char(jtag_base, data32);
+			message++;
+		}
+	}
+}
 int main(void)
 {
 	/**************************************************************************
@@ -197,6 +253,7 @@ int main(void)
 	while (1) {
 		alt_u8 message[6];
 		alt_u8 pause_msg[6];//setup pause value in the array/// HARD code Letter with define
+		alt_u8 jtag_message[50];
 		/*message[0]=sseg_conv_hex(10);
 		message[1]=sseg_conv_hex(11);
 		message[2]=sseg_conv_hex(12);
@@ -225,6 +282,8 @@ int main(void)
 		//load pressed?
 		if(!(keyVal & LOAD_KEY_MSK)){
 			period = displayVal;
+			periode_to_message(period,jtag_message);
+			juart_write_string(JTAG_UART_0_BASE,jtag_message);
 			//load timer
 			//send JTAG msg
 		}
@@ -249,5 +308,9 @@ int main(void)
 			sseg_disp_6_digit(DISP_0_TO_2_BASE,DISP_3_TO_5_BASE,pause_msg);
 		}
 		//led_flash(LEDS_BASE, period);
+
+
+
+
 	}
 }

@@ -100,3 +100,5 @@ Software/progLab1_bsp/.project
 Software/progLab1_bsp/.settings/
 
 Software/progLab1_bsp/
+
+*.bak
