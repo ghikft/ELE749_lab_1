@@ -20,6 +20,7 @@
 #include "io.h"
 #include "alt_types.h"
 #include "system.h"
+#include "stdio.h"
 
 /* pilote pour 4 afficheurs 7 segments controles par un PIO 32bit
  sortie seulement. */
@@ -219,7 +220,7 @@ alt_u8 number_to_ascii(alt_u8 numberIn){
 }
 void periode_to_message(alt_u16 number, alt_u8 *messageOut){
 	int tempAff=number;
-	messageOut[0]='N';
+	/*messageOut[0]='N';
 	messageOut[1]='e';
 	messageOut[2]='w';
 	messageOut[3]=' ';
@@ -229,8 +230,9 @@ void periode_to_message(alt_u16 number, alt_u8 *messageOut){
 	messageOut[7]='i';
 	messageOut[8]='o';
 	messageOut[9]='d';
-	messageOut[10]=':';
-
+	messageOut[10]=':';*/
+	//strcpy(messageOut,"New period: ");
+	//messageOut = "New period: ";
 	messageOut[16] = number_to_ascii(tempAff%10);
 	tempAff = tempAff-tempAff%10;
 	messageOut[15] = number_to_ascii(tempAff%100/10);
@@ -240,9 +242,12 @@ void periode_to_message(alt_u16 number, alt_u8 *messageOut){
 	messageOut[13] = number_to_ascii(tempAff/1000);
 	messageOut[12] = number_to_ascii(0);
 	messageOut[11] = number_to_ascii(0);
-
-	messageOut[16]='\0';
-
+	messageOut[17]=' ';
+	messageOut[18]='m';
+	messageOut[19]='s';
+	messageOut[20]='\n';
+	messageOut[21]='\r';
+	messageOut[22]='\0';
 }
 /* routine pour l'envoi d'une chaine de characteres.
 	methode "busy-waiting" */
@@ -270,7 +275,7 @@ int main(void)
 	while (1) {
 		alt_u8 message[6];
 		alt_u8 pause_msg[6]={HEX_BLANK, HEX_P, HEX_A, HEX_U, HEX_S, HEX_E};//setup pause value in the array/// HARD code Letter with define
-		alt_u8 jtag_message[50];
+		alt_u8 jtag_message[50]={'N','e','w',' ','P','e','r','i','o','d',':'};
 		/*message[0]=sseg_conv_hex(10);
 		message[1]=sseg_conv_hex(11);
 		message[2]=sseg_conv_hex(12);
