@@ -29,6 +29,14 @@
 #define LOAD_KEY_MSK 0x02
 #define PAUSE_KEY_MSK 0x01
 
+#define HEX_P 0x0C
+#define HEX_A 0x08
+#define HEX_U 0x41
+#define HEX_S 0x12
+#define HEX_E 0x06
+#define HEX_BLANK 0xFF
+
+
 /* Exemple d'envoi de chaine de characteres a travers le JTAG UART */
 #define JUART_DATA_REG_OFT		 0		 	 // offset du data register
 #define JUART_CTRL_REG_OFT		 1		 	 // offset du control register
@@ -184,6 +192,15 @@ void led_flash(alt_u32 led_base, int period)
 	}
 }
 
+void delay_ms(int delay)
+{
+	alt_u32 i, itr;
+	itr = delay * 2000;
+	for (i = 0; i < itr; ++i) { // boucle inutile, 1 comparaison
+		; // et 1 incrementation par iteration
+	}
+}
+
 void number_to_character(alt_u16 number, alt_u8 *charOut){
 	int tempAff=number;
 
@@ -252,7 +269,7 @@ int main(void)
 	//start timer with default period value
 	while (1) {
 		alt_u8 message[6];
-		alt_u8 pause_msg[6];//setup pause value in the array/// HARD code Letter with define
+		alt_u8 pause_msg[6]={HEX_BLANK, HEX_P, HEX_A, HEX_U, HEX_S, HEX_E};//setup pause value in the array/// HARD code Letter with define
 		alt_u8 jtag_message[50];
 		/*message[0]=sseg_conv_hex(10);
 		message[1]=sseg_conv_hex(11);
@@ -289,7 +306,7 @@ int main(void)
 		}
 
 		//Pause pressed? flip the pause flagState
-		if(!(keyVal & PAUSE_KEY_MSK)){
+		if(!(keyVal & PAUSE_KEY_MSK)){			
 			pauseFlag = ~pauseFlag;
 
 			if(pauseFlag != 0){
@@ -298,6 +315,7 @@ int main(void)
 			else{
 				//startTimer
 		 	}
+			delay_ms(250);
 		}
 
 		number_to_character(displayVal, message);//split the period into individual number
