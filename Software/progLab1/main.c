@@ -298,6 +298,7 @@ int main(void)
 		get_keys(PUSHBT_BASE, &keyVal);
 		//load pressed?
 		if(!(keyVal & LOAD_KEY_MSK)){
+			delay_ms(250);
 			period = displayVal;
 			periode_to_message(period,jtag_message);
 			juart_write_string(JTAG_UART_0_BASE,jtag_message);
