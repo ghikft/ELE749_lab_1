@@ -1,21 +1,13 @@
-/*
+/*****************************************************************************
  * main.c
  *
  *  Created on: 2023-05-29
- *      Author: Robin
- */
-
-/****** flashing_leds.c *****************************************************
+ *      Author: Robin Galipeau, Nicolas Gagnier
+ *
  * Description
- * Allume et eteint 2 DEL selon un intervalle determine par les switches
- ******************************************************************************
- * Author : Simon Pichette
- * Creation date : 2014-05-01
- * Last Modified : 2014-05-01f
- ******************************************************************************
- * Notes
- * Base sur le listing 9.5 de [Pong Chu SOPC]
-
+ * Toggle 2 LEDs via an interval timmer. The period is set vian the switches
+ * and displayed on the 7 segment displays. Key 0 pauses the count,
+ * Key loads a new period into the timer and Key 3 resets the system
  *****************************************************************************/
 #include "io.h"
 #include "alt_types.h"
