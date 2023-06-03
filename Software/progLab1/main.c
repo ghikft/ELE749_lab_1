@@ -345,10 +345,10 @@ void timer_0_ISR(void *context)
 	// clear irq status in order to prevent retriggering
 	IOWR(INTERVALTIMER_BASE, TIMER_STAT_REG_OFT, 0b10);
 
-	static alt_u8 ledPattern = 0x01; // patron initial
+	static alt_u8 ledPattern = 0x01; // intial template
 
 	ledPattern ^= 0x03; // inverse 2 LSB
-	IOWR(LEDS_BASE, 0, ledPattern); // Ecriture du patron dans registres de leds
+	IOWR(LEDS_BASE, 0, ledPattern); // Write template to LEDs
 }
 
 void start_timer(alt_u32 timerBase)
