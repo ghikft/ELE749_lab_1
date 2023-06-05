@@ -415,22 +415,24 @@ int main(void)
 		get_keys(PUSHBT_BASE, &keyVal);
 		//load pressed?
 		if(!(keyVal & LOAD_KEY_MSK)){
-			delay_ms(50);
-			period = displayVal;
-			periode_to_message(period,jtag_message);
-			
-			//load timer if period is not 0
-			if(period != 0){
-				stop_timer(INTERVALTIMER_BASE);
-				//send JTAG msg
-				juart_write_string(JTAG_UART_0_BASE,jtag_message);
-				//write timer period
-				timer_write_period(INTERVALTIMER_BASE,period);
+			if(pauseFlag==0){
+				delay_ms(50);
+				period = displayVal;
+				periode_to_message(period,jtag_message);
+
+				//load timer if period is not 0
+				if(period != 0){
+					stop_timer(INTERVALTIMER_BASE);
+					//send JTAG msg
+					juart_write_string(JTAG_UART_0_BASE,jtag_message);
+					//write timer period
+					timer_write_period(INTERVALTIMER_BASE,period);
+				}
+				while(!(keyVal & LOAD_KEY_MSK)){
+					get_keys(PUSHBT_BASE, &keyVal);
+				}
+				delay_ms(100);
 			}
-			while(!(keyVal & LOAD_KEY_MSK)){
-				get_keys(PUSHBT_BASE, &keyVal);
-			}
-			delay_ms(100);
 		}
 
 		//Pause pressed? flip the pause flagState
